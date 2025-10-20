@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers import usuario
 
 # Metadata de la API
 app = FastAPI(
@@ -19,13 +20,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ruta de prueba
+# ============================================
+# REGISTRAR ROUTERS
+# ============================================
+app.include_router(
+    usuario.router,
+    prefix="/api/usuarios",
+    tags=["Usuarios"]
+)
+
+# ============================================
+# RUTA RAÍZ
+# ============================================
 @app.get("/")
 async def root():
     return {
         "message": "¡Bienvenido a El Sazón de Toto API!",
         "version": "1.0.0",
-        "status": "running"
+        "status": "running",
+        "docs": "/docs"
     }
 
 # Health check endpoint
@@ -33,7 +46,7 @@ async def root():
 async def health_check():
     return {
         "status": "healthy",
-        "database": "not configured yet"
+        "database": "connected"
     }
 
 # Startup event
@@ -46,4 +59,3 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     print("👋 API detenida")
-    

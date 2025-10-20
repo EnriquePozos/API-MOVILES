@@ -4,8 +4,12 @@ Relación N:M entre Usuario y Publicacion.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import datetime
+
+# Imports para evitar referencias circulares
+if TYPE_CHECKING:
+    from .publicacion import PublicacionSimple
 
 
 # ============================================
@@ -57,10 +61,8 @@ class FavoritoResponse(FavoritoBase):
 # ============================================
 class FavoritoConPublicacion(BaseModel):
     """Esquema de favorito con información completa de la publicación."""
-    from .publicacion import PublicacionSimple
-    
     fecha_guardado: datetime
-    publicacion: PublicacionSimple
+    publicacion: 'PublicacionSimple'
     
     class Config:
         from_attributes = True

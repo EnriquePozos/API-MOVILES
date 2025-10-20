@@ -4,9 +4,14 @@ Define la estructura de datos para requests y responses de recetas.
 """
 
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from app.models.publicacion import EstatusPublicacion
+
+# Imports para evitar referencias circulares
+if TYPE_CHECKING:
+    from .multimedia import MultimediaResponse
+    from .comentario import ComentarioResponse
 
 
 # ============================================
@@ -131,11 +136,8 @@ class PublicacionSimple(BaseModel):
 # ============================================
 class PublicacionDetalle(PublicacionResponse):
     """Esquema completo con multimedia y comentarios recientes."""
-    from .multimedia import MultimediaResponse
-    from .comentario import ComentarioResponse
-    
-    multimedia: List[MultimediaResponse] = []
-    comentarios_recientes: List[ComentarioResponse] = []
+    multimedia: List['MultimediaResponse'] = []
+    comentarios_recientes: List['ComentarioResponse'] = []
     
     class Config:
         from_attributes = True

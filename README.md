@@ -1,3 +1,17 @@
+# Estructura del proyecto
+
+| Carpeta/Archivo    | ¿Qué hace?                                                              |
+|--------------------|-------------------------------------------------------------------------|
+| `models/`          | Tablas de BD (SQLAlchemy)                                               |
+| `database/`        | Configuración de BD (conexiones, sesiones)                              |
+| `schemas/`         | Validación de datos (Pydantic) que entran/salen de la API               |
+| `routers/`         | Endpoints HTTP (rutas: GET, POST, PUT, DELETE)                          |
+| `repositories/`    | Lógica de BD (CRUD: crear, leer, actualizar, eliminar)                  |
+| `scripts/`         | Scripts que nos sirven para probar funcionalidades de la base de datos  |
+| `utils/`           | Utilidades (auth, cloudinary, helpers)                                  |
+| `main.py`          | Corazón de la API (registra routers, configuración general)             |
+
+
 # Crear el entorno virtual
 
 **Se crea**
