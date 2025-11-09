@@ -58,7 +58,7 @@ La salida de dicho comando debe indicar que la conexión fue exitosa e imprimirn
 
 **test_models**
 
-Este archivo es para crear los modelos de la base de datos que estpan en la carpeta de app/models/ en la base de datos de prueba SQLite, se ejecutará el siguiente comando:
+Este archivo es para crear los modelos de la base de datos que están en la carpeta de app/models/ en la base de datos de prueba SQLite, se ejecutará el siguiente comando:
 
 ``` bash
 python test_models.py

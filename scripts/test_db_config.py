@@ -4,7 +4,16 @@ Ejecutar: python test_db_config.py
 """
 
 import sys
-sys.path.append('./app')
+from pathlib import Path
+
+# Asegura que la carpeta 'app' (dos niveles arriba de este script) esté en sys.path
+# Esto permite ejecutar el script desde cualquier ubicación y que Python encuentre el paquete 'database'
+app_path = Path(__file__).resolve().parents[1] / "app"
+if app_path.exists():
+    sys.path.insert(0, str(app_path))
+else:
+    # Fallback: intenta usar ./app relativo al cwd si no se encuentra en la ruta esperada
+    sys.path.insert(0, str(Path.cwd() / "app"))
 
 from database.connection import (
     get_db_url, 
