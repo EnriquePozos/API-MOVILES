@@ -55,7 +55,7 @@ router = APIRouter()
 async def registrar_usuario(
     email: str = Form(...),
     alias: str = Form(...),
-    contraseña: str = Form(...),
+    password: str = Form(...),
     nombre: str = Form(None),
     apellido_paterno: str = Form(None),
     apellido_materno: str = Form(None),
@@ -80,7 +80,7 @@ async def registrar_usuario(
         data = UsuarioCreate(
             email=email,
             alias=alias,
-            contraseña=contraseña,
+            contraseña=password,
             nombre=nombre,
             apellido_paterno=apellido_paterno,
             apellido_materno=apellido_materno,

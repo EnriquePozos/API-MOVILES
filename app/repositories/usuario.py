@@ -38,13 +38,13 @@ def crear_usuario(db: Session, data: UsuarioCreate) -> Usuario:
         raise ValueError("El alias ya está en uso")
     
     # Hashear contraseña
-    hashed_password = hash_password(data.contraseña)
+    #hashed_password = hash_password(data.contraseña)
     
     # Crear modelo Usuario
     nuevo_usuario = Usuario(
         email=data.email,
         alias=data.alias,
-        contraseña=hashed_password,
+        contraseña=data.contraseña,
         nombre=data.nombre,
         apellido_paterno=data.apellido_paterno,
         apellido_materno=data.apellido_materno,
@@ -85,7 +85,7 @@ def login_usuario(db: Session, email: str, contraseña: str) -> Optional[Usuario
         return None
     
     # Verificar contraseña
-    if not verify_password(contraseña, usuario.contraseña):
+    if (usuario.contraseña != contraseña):
         return None
     
     return usuario
