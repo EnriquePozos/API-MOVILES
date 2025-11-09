@@ -3,9 +3,16 @@ Router de Usuario.
 Define los endpoints HTTP para operaciones de usuario.
 """
 
+# Imports para archivos y cloudinary
+import tempfile
+import os
+from app.utils.cloudinary import upload_image
+# Imports de FastAPI y SQLAlchemy
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from fastapi import Form, File, UploadFile
+
 
 from app.database.session import get_db
 from app.schemas.usuario import (
@@ -45,8 +52,16 @@ router = APIRouter()
     summary="Registrar nuevo usuario",
     description="Crea una nueva cuenta de usuario. El email y alias deben ser únicos."
 )
-def registrar_usuario(
-    data: UsuarioCreate,
+async def registrar_usuario(
+    email: str = Form(...),
+    alias: str = Form(...),
+    contraseña: str = Form(...),
+    nombre: str = Form(None),
+    apellido_paterno: str = Form(None),
+    apellido_materno: str = Form(None),
+    telefono: str = Form(None),
+    direccion: str = Form(None),
+    foto_perfil: UploadFile = File(None),  # ← Archivo opcional
     db: Session = Depends(get_db)
 ):
     """
@@ -55,11 +70,51 @@ def registrar_usuario(
     - **email**: Email único del usuario
     - **alias**: Nombre de usuario único
     - **contraseña**: Mínimo 10 caracteres, debe incluir mayúscula, minúscula y número
+    - **foto_perfil**: Imagen de perfil (opcional)
     
     Returns:
         Usuario creado (sin contraseña)
     """
     try:
+        # 1. Validar datos con Pydantic manualmente
+        data = UsuarioCreate(
+            email=email,
+            alias=alias,
+            contraseña=contraseña,
+            nombre=nombre,
+            apellido_paterno=apellido_paterno,
+            apellido_materno=apellido_materno,
+            telefono=telefono,
+            direccion=direccion,
+            foto_perfil=None  # Por ahora None
+        )
+        
+        # 2. Si hay foto, subirla a Cloudinary
+        foto_perfil_url = None
+        if foto_perfil:
+            # Guardar archivo temporalmente
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(foto_perfil.filename)[1]) as tmp_file:
+                content = await foto_perfil.read()
+                tmp_file.write(content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Subir a Cloudinary
+                result = upload_image(
+                    file_path=tmp_file_path,
+                    folder="sazon_toto/usuarios",
+                    public_id=f"user_{data.alias}"
+                )
+                
+                if result:
+                    foto_perfil_url = result["url"]
+                    data.foto_perfil = foto_perfil_url
+                    
+            finally:
+                # Eliminar archivo temporal
+                os.unlink(tmp_file_path)
+        
+        # 3. Crear usuario en BD
         nuevo_usuario = crear_usuario(db, data)
         return nuevo_usuario
         
