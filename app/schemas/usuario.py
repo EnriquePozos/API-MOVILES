@@ -84,6 +84,7 @@ class UsuarioUpdate(BaseModel):
     """
     email: Optional[EmailStr] = None
     alias: Optional[str] = Field(None, min_length=3, max_length=100)
+    contraseña: Optional[str] = Field(None, min_length=10, max_length=100)
     nombre: Optional[str] = Field(None, max_length=255)
     apellido_paterno: Optional[str] = Field(None, max_length=255)
     apellido_materno: Optional[str] = Field(None, max_length=255)
@@ -96,6 +97,27 @@ class UsuarioUpdate(BaseModel):
         if v and not v.isalnum() and '_' not in v:
             raise ValueError('El alias solo puede contener letras, números y guiones bajos')
         return v.lower() if v else v
+    
+    @validator('contraseña')
+    def validar_contraseña_nueva(cls, v, values):
+        """Valida que la nueva contraseña cumpla requisitos y sea diferente a la actual."""
+        # Verificar longitud
+        if len(v) < 10:
+            raise ValueError('La contraseña debe tener al menos 10 caracteres')
+        
+        # Verificar mayúscula
+        if not any(c.isupper() for c in v):
+            raise ValueError('La contraseña debe contener al menos una letra mayúscula')
+        
+        # Verificar minúscula
+        if not any(c.islower() for c in v):
+            raise ValueError('La contraseña debe contener al menos una letra minúscula')
+        
+        # Verificar número
+        if not any(c.isdigit() for c in v):
+            raise ValueError('La contraseña debe contener al menos un número')
+        
+        return v
 
 
 # ============================================
@@ -103,11 +125,11 @@ class UsuarioUpdate(BaseModel):
 # ============================================
 class UsuarioCambiarContraseña(BaseModel):
     """Esquema para cambiar la contraseña."""
-    contraseña_actual: str = Field(..., description="Contraseña actual")
     contraseña_nueva: str = Field(
         ..., 
         min_length=10, 
         max_length=100, 
+        example="NuevaContraseña123",
         description="Nueva contraseña (mínimo 10 caracteres, debe incluir mayúscula, minúscula y número)"
     )
     
@@ -130,10 +152,6 @@ class UsuarioCambiarContraseña(BaseModel):
         if not any(c.isdigit() for c in v):
             raise ValueError('La contraseña debe contener al menos un número')
         
-        # Verificar que sea diferente a la actual
-        if 'contraseña_actual' in values and v == values['contraseña_actual']:
-            raise ValueError('La nueva contraseña debe ser diferente a la actual')
-        
         return v
 
 
@@ -148,12 +166,12 @@ class UsuarioResponse(UsuarioBase):
     """
     id: str
     fecha_registro: datetime
+    contraseña: str
     
     class Config:
         from_attributes = True  # Permite crear desde modelo SQLAlchemy
         json_schema_extra = {
             "example": {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
                 "email": "usuario@example.com",
                 "alias": "chef_123",
                 "nombre": "Juan",
@@ -162,7 +180,10 @@ class UsuarioResponse(UsuarioBase):
                 "telefono": "1234567890",
                 "direccion": "Calle Principal 123",
                 "fecha_registro": "2025-10-19T12:00:00",
-                "foto_perfil": "https://res.cloudinary.com/..."
+                "foto_perfil": "https://res.cloudinary.com/...",
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "fecha_registro": "2024-01-01T12:00:00",
+                "contraseña": "raw password"
             }
         }
 

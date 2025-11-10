@@ -10,7 +10,7 @@ from app.utils.cloudinary import upload_image
 # Imports de FastAPI y SQLAlchemy
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from fastapi import Form, File, UploadFile
 
 
@@ -55,13 +55,13 @@ router = APIRouter()
 async def registrar_usuario(
     email: str = Form(...),
     alias: str = Form(...),
-    contraseña: str = Form(...),
+    password: str = Form(...),
     nombre: str = Form(None),
     apellido_paterno: str = Form(None),
     apellido_materno: str = Form(None),
     telefono: str = Form(None),
     direccion: str = Form(None),
-    foto_perfil: UploadFile = File(None),  # ← Archivo opcional
+    foto_perfil: Optional[UploadFile] = File(None),  # ← Archivo opcional
     db: Session = Depends(get_db)
 ):
     """
@@ -80,7 +80,7 @@ async def registrar_usuario(
         data = UsuarioCreate(
             email=email,
             alias=alias,
-            contraseña=contraseña,
+            contraseña=password,
             nombre=nombre,
             apellido_paterno=apellido_paterno,
             apellido_materno=apellido_materno,
@@ -89,9 +89,11 @@ async def registrar_usuario(
             foto_perfil=None  # Por ahora None
         )
         
-        # 2. Si hay foto, subirla a Cloudinary
-        foto_perfil_url = None
-        if foto_perfil:
+        # 2. Crear usuario en BD
+        nuevo_usuario = usuario_repo.crear_usuario(db, data)
+        
+        # 3. Si hay foto, subirla a Cloudinary
+        if foto_perfil and foto_perfil.filename:
             # Guardar archivo temporalmente
             with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(foto_perfil.filename)[1]) as tmp_file:
                 content = await foto_perfil.read()
@@ -103,19 +105,19 @@ async def registrar_usuario(
                 result = upload_image(
                     file_path=tmp_file_path,
                     folder="sazon_toto/usuarios",
-                    public_id=f"user_{data.alias}"
+                    public_id=f"user_{nuevo_usuario.id}",
+                    overwrite=True
                 )
                 
                 if result:
-                    foto_perfil_url = result["url"]
-                    data.foto_perfil = foto_perfil_url
+                    nuevo_usuario.foto_perfil = result["url"]
+                    db.commit()
+                    db.refresh(nuevo_usuario)
                     
             finally:
                 # Eliminar archivo temporal
                 os.unlink(tmp_file_path)
         
-        # 3. Crear usuario en BD
-        nuevo_usuario = crear_usuario(db, data)
         return nuevo_usuario
         
     except ValueError as e:
@@ -267,9 +269,17 @@ def get_usuario(
     summary="Actualizar usuario",
     description="Actualiza los datos de un usuario"
 )
-def actualizar_usuario(
+async def actualizar_usuario(
     usuario_id: str,
-    data: UsuarioUpdate,
+    email: str = Form(None),
+    alias: str = Form(None),
+    password: str = Form(None),
+    nombre: str = Form(None),
+    apellido_paterno: str = Form(None),
+    apellido_materno: str = Form(None),
+    telefono: str = Form(None),
+    direccion: str = Form(None),
+    foto_perfil: Optional[UploadFile] = File(None),  # ← Nueva foto (opcional)
     db: Session = Depends(get_db)
 ):
     """
@@ -277,11 +287,61 @@ def actualizar_usuario(
     
     - **usuario_id**: ID del usuario a actualizar
     - Solo se actualizan los campos proporcionados
+    - Si se envía foto_perfil, se sube a Cloudinary
     
     Returns:
         Usuario actualizado
     """
     try:
+        # 1. Preparar datos de actualización
+        update_data = {}
+        
+        if email is not None:
+            update_data["email"] = email
+        if alias is not None:
+            update_data["alias"] = alias
+        if password is not None:
+            update_data["contraseña"] = password
+        if nombre is not None:
+            update_data["nombre"] = nombre
+        if apellido_paterno is not None:
+            update_data["apellido_paterno"] = apellido_paterno
+        if apellido_materno is not None:
+            update_data["apellido_materno"] = apellido_materno
+        if telefono is not None:
+            update_data["telefono"] = telefono
+        if direccion is not None:
+            update_data["direccion"] = direccion
+        
+        # 2. Si hay nueva foto, subirla a Cloudinary
+        if foto_perfil and foto_perfil.filename:
+            
+            # Guardar archivo temporalmente
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(foto_perfil.filename)[1]) as tmp_file:
+                content = await foto_perfil.read()
+                tmp_file.write(content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Subir a Cloudinary (sobrescribe la anterior)
+                result = upload_image(
+                    file_path=tmp_file_path,
+                    folder="sazon_toto/usuarios",
+                    public_id=f"user_{usuario_id}",
+                    overwrite=True  # ← Sobrescribe foto anterior
+                )
+                
+                if result:
+                    update_data["foto_perfil"] = result["url"]
+                    
+            finally:
+                # Eliminar archivo temporal
+                os.unlink(tmp_file_path)
+        
+        # 3. Validar con Pydantic
+        data = UsuarioUpdate(**update_data)
+        
+        # 4. Actualizar en BD
         usuario_actualizado = usuario_repo.actualizar_usuario(db, usuario_id, data)
         
         if not usuario_actualizado:
@@ -297,6 +357,11 @@ def actualizar_usuario(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al actualizar usuario: {str(e)}"
+        )
 
 
 # ============================================
@@ -309,7 +374,7 @@ def actualizar_usuario(
     description="Cambia la contraseña de un usuario"
 )
 def cambiar_contraseña(
-    usuario_id: str,
+    user_id: str,
     data: UsuarioCambiarContraseña,
     db: Session = Depends(get_db)
 ):
@@ -326,8 +391,7 @@ def cambiar_contraseña(
     try:
         cambiar_contraseña_repo(
             db,
-            usuario_id,
-            data.contraseña_actual,
+            user_id,
             data.contraseña_nueva
         )
         
