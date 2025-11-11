@@ -38,16 +38,13 @@ def crear_usuario(db: Session, data: UsuarioCreate) -> Usuario:
         raise ValueError("El alias ya está en uso")
     
     # Hashear contraseña
-    #hashed_password = hash_password(data.contraseña)
-    
-    # Usar contraseña en texto plano (temporal)
-    password = data.contraseña
+    hashed_password = hash_password(data.contraseña)
     
     # Crear modelo Usuario
     nuevo_usuario = Usuario(
         email=data.email,
         alias=data.alias,
-        contraseña= password, #hashed_password,
+        contraseña=hashed_password,
         nombre=data.nombre,
         apellido_paterno=data.apellido_paterno,
         apellido_materno=data.apellido_materno,
@@ -87,12 +84,8 @@ def login_usuario(db: Session, email: str, contraseña: str) -> Optional[Usuario
     if not usuario:
         return None
     
-    # Verificar contraseña hasheada
-    #if not verify_password(contraseña, usuario.contraseña):
-    #    return None
-    
-    # Verificacion en texto plano
-    if contraseña != usuario.contraseña:
+    # Verificar contraseña
+    if not verify_password(contraseña, usuario.contraseña):
         return None
     
     return usuario
@@ -202,6 +195,7 @@ def actualizar_usuario(db: Session, usuario_id: str, data: UsuarioUpdate) -> Opt
 def cambiar_contraseña(
     db: Session,
     usuario_id: str,
+    contraseña_actual: str,
     contraseña_nueva: str
 ) -> bool:
     """
@@ -225,12 +219,11 @@ def cambiar_contraseña(
         raise ValueError("Usuario no encontrado")
     
     # Verificar contraseña actual
-    #if not verify_password(contraseña_actual, usuario.contraseña):
-    #    raise ValueError("Contraseña actual incorrecta")
+    if not verify_password(contraseña_actual, usuario.contraseña):
+        raise ValueError("Contraseña actual incorrecta")
     
     # Hashear y actualizar nueva contraseña
-    usuario.contraseña = contraseña_nueva 
-    #hash_password(contraseña_nueva)
+    usuario.contraseña = hash_password(contraseña_nueva)
     
     db.commit()
     return True
