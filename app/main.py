@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import usuario, publicacion, favoritos
+from app.routers import usuario, publicacion, favoritos, reaccion
 
 # Metadata de la API
 app = FastAPI(
@@ -39,6 +39,12 @@ app.include_router(
     favoritos.router,
     prefix="/api/favoritos",
     tags=["Favoritos"]
+)
+
+app.include_router(
+    reaccion.router,
+    prefix="/api/reaccion",
+    tags=["Reacciones"]
 )
 
 # ============================================
