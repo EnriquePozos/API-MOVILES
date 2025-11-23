@@ -107,3 +107,30 @@ def get_feed_pubs(db: Session) -> List[Publicacion]:
         pub.multimedia_list = pub.multimedia
     
     return publicaciones
+
+# Obtener publicaciones de un usuario ()
+def get_user_pubs(db: Session, id_autor: str, estatus: EstatusPublicacion) -> List[Publicacion]:
+    """
+    Obtiene publicaciones con un estatus indicado de un usuario con autor y multimedia.
+    """
+    publicaciones = db.query(Publicacion).options(
+        joinedload(Publicacion.autor),
+        joinedload(Publicacion.multimedia),
+        joinedload(Publicacion.comentarios).joinedload(Comentario.usuario)
+    ).filter(
+        Publicacion.estatus == estatus,
+        Publicacion.id_autor == id_autor
+    ).order_by(
+        Publicacion.fecha_publicacion.desc()
+    ).all()
+    
+    # Enriquecer datos
+    for pub in publicaciones:
+        pub.autor_alias = pub.autor.alias if pub.autor else None
+        pub.autor_foto = pub.autor.foto_perfil if pub.autor else None
+        pub.total_comentarios = len(pub.comentarios)
+        pub.total_reacciones = len(pub.reacciones)
+        pub.imagen_preview = pub.multimedia[0].url if pub.multimedia else None
+        pub.multimedia_list = pub.multimedia
+    
+    return publicaciones
