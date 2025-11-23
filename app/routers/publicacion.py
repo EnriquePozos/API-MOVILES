@@ -102,7 +102,7 @@ def get_publicacion(
     summary="Obtener las publicaciones de un usuario (activas)",
     description="Obtiene todas las publicaciones (recetas) de un usuario que están activas."
 )
-def get_users_active_pubs(
+def get_user_active_pubs(
     id_usuario: str,
     db: Session = Depends(get_db)
 ):
@@ -126,7 +126,7 @@ def get_users_active_pubs(
     summary="Obtener las publicaciones de un usuario (borradores)",
     description="Obtiene todas las publicaciones (recetas) de un usuario que son borradores."
 )
-def get_users_active_pubs(
+def get_user_drafts(
     id_usuario: str,
     db: Session = Depends(get_db)
 ):
@@ -150,7 +150,7 @@ def get_users_active_pubs(
     summary="Obtener las publicaciones de un usuario (favoritos)",
     description="Obtiene todas las publicaciones (recetas) de un usuario que son sus favoritas."
 )
-def get_users_active_pubs(
+def get_user_favorites(
     id_usuario: str,
     db: Session = Depends(get_db)
 ):
