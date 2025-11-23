@@ -3,10 +3,13 @@ Repository de publicación.
 Contiene las operaciones CRUD para el modelo Publicacion.
 """
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from typing import Optional
+from typing import Optional, List
+
 from app.models.publicacion import EstatusPublicacion, Publicacion
+from app.models.comentario import Comentario
+from app.models.usuario import Usuario
 from app.schemas.publicacion import PublicacionCreate, PublicacionUpdate
 from app.utils.datetime_utils import now, utc_now
 
@@ -77,3 +80,30 @@ def eliminar_publicacion(db: Session, pub: Publicacion) -> bool:
 def get_publicacion_by_id(db: Session, publicacion_id: str) -> Optional[Publicacion]:
     """ Obtiene una publicación por su ID."""
     return db.query(Publicacion).filter(Publicacion.id == publicacion_id).first()
+
+# Obtener publicaciones para feed
+def get_feed_pubs(db: Session) -> List[Publicacion]:
+    """
+    Obtiene publicaciones del feed (no eliminadas) con autor y multimedia.
+    Optimizado con eager loading.
+    """
+    publicaciones = db.query(Publicacion).options(
+        joinedload(Publicacion.autor),
+        joinedload(Publicacion.multimedia),
+        joinedload(Publicacion.comentarios).joinedload(Comentario.usuario)
+    ).filter(
+        Publicacion.estatus != EstatusPublicacion.ELIMINADA
+    ).order_by(
+        Publicacion.fecha_publicacion.desc()
+    ).all()
+    
+    # Enriquecer datos
+    for pub in publicaciones:
+        pub.autor_alias = pub.autor.alias if pub.autor else None
+        pub.autor_foto = pub.autor.foto_perfil if pub.autor else None
+        pub.total_comentarios = len(pub.comentarios)
+        pub.total_reacciones = len(pub.reacciones)
+        pub.imagen_preview = pub.multimedia[0].url if pub.multimedia else None
+        pub.multimedia_list = pub.multimedia
+    
+    return publicaciones

@@ -21,12 +21,12 @@ from app.schemas.publicacion import (
     PublicacionUpdate,
     PublicacionSimple,
     PublicacionDetalle,
-    PublicacionPublicar
+    PublicacionListFeed
 )
 from app.repositories.publicacion import (
     crear_publicacion,
     get_publicacion_by_id,
-    # obtener_publicaciones_feed,
+    get_feed_pubs,
     actualizar_publicacion,
     # publicar_publicacion,
     eliminar_publicacion
@@ -41,6 +41,29 @@ from datetime import timedelta
 # Crear router
 router = APIRouter()
 
+
+# Obtener publicaciones para el feed
+@router.get(
+    "/get_feed", 
+    response_model=List[PublicacionListFeed],
+    status_code=status.HTTP_200_OK,
+    summary="Obtener las publicaciones del feed",
+    description="Obtiene todas las publicaciones (recetas) para el feed."
+)
+def get_feed_publicaciones(
+    db: Session = Depends(get_db)
+):
+    """ Obtiene las publicaciones para el feed (no eliminadas)."""
+    
+    publicacion = get_feed_pubs(db)
+        
+    if len(publicacion) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No hay publicaciones disponibles"
+        )
+        
+    return publicacion
 
 # Obtener publicación por ID
 @router.get(
@@ -65,6 +88,7 @@ def get_publicacion(
         )
         
     return publicacion
+
 
 # Crear nueva publicación
 @router.post(

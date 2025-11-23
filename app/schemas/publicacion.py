@@ -8,8 +8,8 @@ from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from app.models.publicacion import EstatusPublicacion
 
-from app.schemas.multimedia import MultimediaResponse
-from app.schemas.comentario import ComentarioResponse
+from app.schemas.multimedia import MultimediaResponse, MultimediaSimple
+from app.schemas.comentario import ComentarioResponse, ComentarioSimple
 
 
 # ============================================
@@ -181,7 +181,34 @@ class PublicacionDetalle(PublicacionResponse):
                 ]
             }
         }
-
+        
+class PublicacionListFeed(BaseModel):
+    """Esquema para publicaciones en el feed."""
+    id: str
+    titulo: str
+    descripcion: Optional[str] = None
+    fecha_publicacion: Optional[datetime] = None
+    estatus: EstatusPublicacion
+    id_autor: str
+    
+    # Datos del autor
+    autor_alias: Optional[str] = None
+    autor_foto: Optional[str] = None
+    
+    # Estadísticas
+    total_comentarios: int = 0
+    total_reacciones: int = 0
+    
+    # Preview
+    imagen_preview: Optional[str] = None
+    
+    # Multimedia y comentarios (opcionales para feed)
+    multimedia_list: List[MultimediaSimple] = []
+    comentarios_recientes: List[ComentarioSimple] = []
+    
+    class Config:
+        from_attributes = True
+        
 
 # ============================================
 # ESQUEMA PARA PUBLICAR (cambiar de borrador a publicada)
