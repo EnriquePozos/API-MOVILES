@@ -85,7 +85,7 @@ class ComentarioResponse(ComentarioBase):
     usuario_foto: Optional[str] = None
     
     # Indicadores
-    es_respuesta: bool = False
+    #es_respuesta: bool = False
     total_respuestas: int = 0
     total_reacciones: int = 0
     
@@ -102,7 +102,7 @@ class ComentarioResponse(ComentarioBase):
                 "id_comentario": None,
                 "usuario_alias": "chef_123",
                 "usuario_foto": "https://res.cloudinary.com/...",
-                "es_respuesta": False,
+                #"es_respuesta": False,
                 "total_respuestas": 2,
                 "total_reacciones": 5
             }

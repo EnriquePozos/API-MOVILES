@@ -39,10 +39,10 @@ from .comentario import (
 from .reaccion import (
     ReaccionBase,
     ReaccionCreate,
-    ReaccionUpdate,
+    #ReaccionUpdate,
     ReaccionResponse,
-    ReaccionSimple,
-    ReaccionToggle
+    #ReaccionSimple,
+    #ReaccionToggle
 )
 
 # Multimedia
@@ -94,7 +94,7 @@ __all__ = [
     # Reaccion
     "ReaccionBase",
     "ReaccionCreate",
-    "ReaccionUpdate",
+    # "ReaccionUpdate",
     "ReaccionResponse",
     "ReaccionSimple",
     "ReaccionToggle",
