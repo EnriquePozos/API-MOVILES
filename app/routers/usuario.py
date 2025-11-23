@@ -299,23 +299,74 @@ def get_usuario_email(
     "/{usuario_id}",
     response_model=UsuarioResponse,
     summary="Actualizar usuario",
-    description="Actualiza los datos de un usuario"
+    description="Actualiza los datos de un usuario, incluyendo imagen de perfil opcional"
 )
-def actualizar_usuario(
+async def actualizar_usuario(
     usuario_id: str,
-    data: UsuarioUpdate,
+    email: str = Form(None),
+    alias: str = Form(None), 
+    nombre: str = Form(None),
+    apellido_paterno: str = Form(None),
+    apellido_materno: str = Form(None),
+    telefono: str = Form(None),
+    direccion: str = Form(None),
+    foto_perfil: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
     """
     Actualiza los datos de un usuario.
     
     - **usuario_id**: ID del usuario a actualizar
+    - **foto_perfil**: Nueva imagen de perfil (opcional)
     - Solo se actualizan los campos proporcionados
     
     Returns:
         Usuario actualizado
     """
     try:
+        # 1. Crear objeto UsuarioUpdate con los campos de texto
+        update_data = {}
+        
+        if email is not None:
+            update_data['email'] = email
+        if alias is not None:
+            update_data['alias'] = alias  
+        if nombre is not None:
+            update_data['nombre'] = nombre
+        if apellido_paterno is not None:
+            update_data['apellido_paterno'] = apellido_paterno
+        if apellido_materno is not None:
+            update_data['apellido_materno'] = apellido_materno
+        if telefono is not None:
+            update_data['telefono'] = telefono
+        if direccion is not None:
+            update_data['direccion'] = direccion
+            
+        # 2. Si hay foto nueva, subirla a Cloudinary
+        if foto_perfil:
+            # Guardar archivo temporalmente
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(foto_perfil.filename)[1]) as tmp_file:
+                content = await foto_perfil.read()
+                tmp_file.write(content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Subir a Cloudinary
+                result = upload_image(
+                    file_path=tmp_file_path,
+                    folder="sazon_toto/usuarios",
+                    public_id=f"user_{usuario_id}"
+                )
+                
+                if result:
+                    update_data['foto_perfil'] = result["url"]
+                    
+            finally:
+                # Eliminar archivo temporal
+                os.unlink(tmp_file_path)
+        
+        # 3. Crear UsuarioUpdate y actualizar
+        data = UsuarioUpdate(**update_data)
         usuario_actualizado = usuario_repo.actualizar_usuario(db, usuario_id, data)
         
         if not usuario_actualizado:

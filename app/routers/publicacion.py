@@ -6,7 +6,7 @@ Router de publicaciones
 import tempfile
 import os
 
-from app.utils.cloudinary import upload_image
+from app.utils.cloudinary import upload_image, upload_media, detectar_tipo_multimedia
 # Imports de FastAPI y SQLAlchemy
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -31,6 +31,10 @@ from app.repositories.publicacion import (
     # publicar_publicacion,
     eliminar_publicacion
 )
+
+# Guardar en tabla Multimedia
+from app.repositories.multimedia import crear_multimedia
+from app.schemas.multimedia import MultimediaCreate
 
 import app.repositories.publicacion as pub_repo
 import app.repositories.usuario as user_repo
@@ -93,57 +97,104 @@ def get_publicacion(
 # Crear nueva publicación
 @router.post(
     "/crear_publicacion",
-    response_model=PublicacionSimple,
+    response_model=PublicacionDetalle,
     status_code=status.HTTP_201_CREATED,
-    summary="Crear una nueva publicación",
-    description="Crea una nueva publicación (receta)."
+    summary="Crear una nueva publicación con multimedia",
+    description="Crea una nueva publicación (receta) con imágenes/videos opcionales."
 )
-def crear_nueva_publicacion(
+async def crear_nueva_publicacion(
     titulo: str = Form(..., min_length=5, max_length=255),
     descripcion: str = Form(None),
-    estatus: EstatusPublicacion = Form(None),
+    estatus: EstatusPublicacion = Form(...),
     id_autor: str = Form(...),
+    archivos: List[UploadFile] = File(None),  # ← Cambiado de "imagenes" a "archivos"
     db: Session = Depends(get_db)
 ):
-    """
-    Crea una nueva publicación en estado borrador.
-    
-    Args:
-        publicacion: Datos de la publicación (PublicacionCreate schema)
-        db: Sesión de base de datos
-        usuario_actual: Usuario autenticado
+    """Crea una nueva publicación con multimedia (imágenes y/o videos)."""
+    try:
+        # 1. Validar y crear publicación
+        data = PublicacionCreate(
+            titulo=titulo,
+            descripcion=descripcion,
+            estatus=estatus
+        )
         
-    Returns:
-        PublicacionSimple: Publicación creada
-    """
-    
-    data = PublicacionCreate(
-        titulo=titulo,
-        descripcion=descripcion,
-        estatus=estatus
-    )
-    
-    nueva_publicacion = crear_publicacion(
-        db=db,
-        data=data,
-        p_id_autor=id_autor
-    )
-    return nueva_publicacion
+        nueva_publicacion = crear_publicacion(
+            db=db,
+            data=data,
+            p_id_autor=id_autor
+        )
+        
+        # 2. Procesar archivos multimedia
+        if archivos:
+            multimedia_urls = []
+            
+            for archivo in archivos:
+                if archivo and archivo.filename:
+                    # Detectar tipo
+                    tipo_multimedia = detectar_tipo_multimedia(archivo)
+                    
+                    # Guardar temporalmente
+                    extension = os.path.splitext(archivo.filename)[1]
+                    with tempfile.NamedTemporaryFile(
+                        delete=False,
+                        suffix=extension
+                    ) as tmp_file:
+                        content = await archivo.read()
+                        tmp_file.write(content)
+                        tmp_file_path = tmp_file.name
+                    
+                    try:
+                        # Determinar resource_type para Cloudinary
+                        resource_type = "video" if tipo_multimedia == "video" else "image"
+                        
+                        # Subir a Cloudinary
+                        result = upload_media(
+                            file_path=tmp_file_path,
+                            folder="sazon_toto/publicaciones",
+                            public_id=f"pub_{nueva_publicacion.id}_{len(multimedia_urls)}",
+                            resource_type=resource_type
+                        )
+                        
+                        if result:
+                            # Guardar en BD
+                            multimedia_data = MultimediaCreate(
+                                url=result["url"],
+                                tipo=tipo_multimedia,
+                                id_publicacion=nueva_publicacion.id
+                            )
+                            
+                            crear_multimedia(db, multimedia_data)
+                            multimedia_urls.append(result["url"])
+                            
+                    finally:
+                        os.unlink(tmp_file_path)
+            
+        
+        db.refresh(nueva_publicacion)
+        return nueva_publicacion
+        
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Error al crear publicación: {str(e)}")
 
 
 # Actualizar publicación
 @router.put(
     "/update_pub/{id_publicacion}",
-    response_model=PublicacionSimple,
+    response_model=PublicacionDetalle,
     status_code=status.HTTP_200_OK,
     summary="Actualizar una publicación existente",
     description="Actualiza una publicación (receta)."
 )
-def update_publicacion(
+async def update_publicacion(
     id_publicacion: str,
     titulo: str = Form(..., min_length=5, max_length=255),
     descripcion: str = Form(None),
     estatus: EstatusPublicacion = Form(None),
+    archivos: List[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
     """ Actualiza una publicación existente."""
@@ -167,6 +218,58 @@ def update_publicacion(
         data=data,
         pub=publicacion,
     )
+    
+    # 2. Procesar archivos multimedia
+    if archivos:
+        multimedia_urls = []
+        
+        # Si hay archivos borro toda la multimedia anterior
+        actualizada.multimedia.clear()
+        db.commit()
+        db.refresh(actualizada)
+        
+        for archivo in archivos:
+            if archivo and archivo.filename:
+                # Detectar tipo
+                tipo_multimedia = detectar_tipo_multimedia(archivo)
+                
+                # Guardar temporalmente
+                extension = os.path.splitext(archivo.filename)[1]
+                with tempfile.NamedTemporaryFile(
+                    delete=False,
+                    suffix=extension
+                ) as tmp_file:
+                    content = await archivo.read()
+                    tmp_file.write(content)
+                    tmp_file_path = tmp_file.name
+                
+                try:
+                    # Determinar resource_type para Cloudinary
+                    resource_type = "video" if tipo_multimedia == "video" else "image"
+                    
+                    # Subir a Cloudinary
+                    result = upload_media(
+                        file_path=tmp_file_path,
+                        folder="sazon_toto/publicaciones",
+                        public_id=f"pub_{actualizada.id}_{len(multimedia_urls)}",
+                        resource_type=resource_type
+                    )
+                    
+                    if result:
+                        # Guardar en BD
+                        multimedia_data = MultimediaCreate(
+                            url=result["url"],
+                            tipo=tipo_multimedia,
+                            id_publicacion=actualizada.id
+                        )
+                        
+                        crear_multimedia(db, multimedia_data)
+                        multimedia_urls.append(result["url"])
+                        
+                finally:
+                    os.unlink(tmp_file_path)
+            
+        db.refresh(actualizada)
     
     return actualizada
     

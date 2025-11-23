@@ -92,7 +92,7 @@ def get_feed_pubs(db: Session) -> List[Publicacion]:
         joinedload(Publicacion.multimedia),
         joinedload(Publicacion.comentarios).joinedload(Comentario.usuario)
     ).filter(
-        Publicacion.estatus != EstatusPublicacion.ELIMINADA
+        Publicacion.estatus == EstatusPublicacion.PUBLICADA
     ).order_by(
         Publicacion.fecha_publicacion.desc()
     ).all()
