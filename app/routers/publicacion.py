@@ -29,7 +29,8 @@ from app.repositories.publicacion import (
     get_feed_pubs,
     actualizar_publicacion,
     eliminar_publicacion,
-    get_user_pubs
+    get_user_pubs,
+    get_fav_pubs
 )
 
 # Guardar en tabla Multimedia
@@ -132,6 +133,30 @@ def get_users_active_pubs(
     """ Obtiene las publicaciones para el feed (no eliminadas)."""
     
     publicacion = get_user_pubs(db, id_usuario, EstatusPublicacion.BORRADOR)
+        
+    if len(publicacion) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No hay publicaciones disponibles"
+        )
+        
+    return publicacion
+
+# Obtener publicaciones de borrador de un usuario
+@router.get(
+    "/get_fav_pubs/{id_usuario}", 
+    response_model=List[PublicacionListFeed],
+    status_code=status.HTTP_200_OK,
+    summary="Obtener las publicaciones de un usuario (favoritos)",
+    description="Obtiene todas las publicaciones (recetas) de un usuario que son sus favoritas."
+)
+def get_users_active_pubs(
+    id_usuario: str,
+    db: Session = Depends(get_db)
+):
+    """ Obtiene las publicaciones para el feed (favoritas)."""
+    
+    publicacion = get_fav_pubs(db, id_usuario)
         
     if len(publicacion) == 0:
         raise HTTPException(

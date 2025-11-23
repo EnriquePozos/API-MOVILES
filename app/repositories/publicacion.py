@@ -9,7 +9,7 @@ from typing import Optional, List
 
 from app.models.publicacion import EstatusPublicacion, Publicacion
 from app.models.comentario import Comentario
-from app.models.usuario import Usuario
+from app.models.favorito import Favorito
 from app.schemas.publicacion import PublicacionCreate, PublicacionUpdate
 from app.utils.datetime_utils import now, utc_now
 
@@ -134,3 +134,18 @@ def get_user_pubs(db: Session, id_autor: str, estatus: EstatusPublicacion) -> Li
         pub.multimedia_list = pub.multimedia
     
     return publicaciones
+
+
+def get_fav_pubs(db: Session, id_autor: str) -> List[Publicacion]:
+    """ Obtiene publicaciones marcadas como favoritas por el usuario."""
+    favoritos = db.query(Favorito).filter(
+        Favorito.id_usuario == id_autor
+    ).all()
+    
+    publicaciones = get_user_pubs(db, id_autor, EstatusPublicacion.PUBLICADA)
+    
+    favoritas_ids = {fav.id_publicacion for fav in favoritos}
+    
+    fav_pubs = [pub for pub in publicaciones if pub.id in favoritas_ids]
+    
+    return fav_pubs
