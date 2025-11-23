@@ -69,7 +69,7 @@ La salida deberá indicar la cantidad de tablas que se crearon en SQLite seguido
 
 **tables_mysql**
 
-Tiene el mismo propósito que el anterior pero para MySQL, cabe recalcar que este archivo no modifica las tablas que ya existen en la base de datos, solo las crea, por lo que si ta existen no hará nada. Ejecutar el comando:
+Tiene el mismo propósito que el anterior pero para MySQL, cabe recalcar que este archivo no modifica las tablas que ya existen en la base de datos, solo las crea, por lo que si ya existen no hará nada. Ejecutar el comando:
 
 ``` bash
 python tables_mysql.py

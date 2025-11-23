@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import usuario
+from app.routers import usuario, publicacion
 
 # Metadata de la API
 app = FastAPI(
@@ -27,6 +27,12 @@ app.include_router(
     usuario.router,
     prefix="/api/usuarios",
     tags=["Usuarios"]
+)
+
+app.include_router(
+    publicacion.router,
+    prefix="/api/publicaciones",
+    tags=["Publicaciones"]
 )
 
 # ============================================

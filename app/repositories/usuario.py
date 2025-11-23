@@ -285,9 +285,13 @@ def get_perfil_usuario(db: Session, usuario_id: str) -> Optional[dict]:
     # Contar favoritos
     total_favoritos = len(usuario.favoritos)
     
+    # Incluir lista de publicaciones
+    lista_publicaciones = [pub.id for pub in usuario.publicaciones]
+    
     return {
         "usuario": usuario,
         "total_publicaciones": total_publicaciones,
         "total_comentarios": total_comentarios,
-        "total_favoritos": total_favoritos
+        "total_favoritos": total_favoritos,
+        "lista_publicaciones": lista_publicaciones
     }
