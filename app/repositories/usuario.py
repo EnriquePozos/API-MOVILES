@@ -221,11 +221,14 @@ def cambiar_contraseña(
         raise ValueError("Usuario no encontrado")
     
     # Verificar contraseña actual
-    if not verify_password(contraseña_actual, usuario.contraseña):
+    # if not verify_password(contraseña_actual, usuario.contraseña):
+    #     raise ValueError("Contraseña actual incorrecta")
+    if contraseña_actual != usuario.contraseña:
         raise ValueError("Contraseña actual incorrecta")
     
     # Hashear y actualizar nueva contraseña
-    usuario.contraseña = hash_password(contraseña_nueva)
+    #usuario.contraseña = hash_password(contraseña_nueva)
+    usuario.contraseña = contraseña_nueva
     
     db.commit()
     return True

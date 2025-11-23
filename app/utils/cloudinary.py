@@ -9,6 +9,7 @@ import cloudinary.api
 from typing import Optional, Dict
 import os
 from dotenv import load_dotenv
+from fastapi import UploadFile
 
 load_dotenv()
 
@@ -223,3 +224,64 @@ def get_thumbnail_url(public_id: str, width: int = 300, height: int = 300) -> st
     """
     cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME")
     return f"https://res.cloudinary.com/{cloud_name}/image/upload/w_{width},h_{height},c_fill/{public_id}"
+
+
+def upload_media(
+    file_path: str,
+    folder: str = "sazon_toto",
+    public_id: Optional[str] = None,
+    resource_type: str = "auto"  # ← auto, image, video
+) -> Optional[Dict]:
+    """
+    Sube imagen o video a Cloudinary.
+    
+    Args:
+        file_path: Ruta del archivo
+        folder: Carpeta en Cloudinary
+        public_id: ID público
+        resource_type: Tipo (auto, image, video)
+    """
+    try:
+        upload_options = {
+            "folder": folder,
+            "resource_type": resource_type,  # ← Importante para videos
+            "overwrite": True
+        }
+        
+        if public_id:
+            upload_options["public_id"] = public_id
+        
+        result = cloudinary.uploader.upload(file_path, **upload_options)
+        
+        return {
+            "url": result.get("secure_url"),
+            "public_id": result.get("public_id"),
+            "format": result.get("format"),
+            "resource_type": result.get("resource_type"),
+            "duration": result.get("duration"),  # Solo videos
+            "width": result.get("width"),
+            "height": result.get("height"),
+            "bytes": result.get("bytes"),
+            "created_at": result.get("created_at")
+        }
+        
+    except Exception as e:
+        print(f"Error al subir a Cloudinary: {e}")
+        return None
+
+def detectar_tipo_multimedia(archivo: UploadFile) -> str:
+    """Detecta si es imagen o video."""
+    if archivo.content_type:
+        if archivo.content_type.startswith('image/'):
+            return "imagen"
+        elif archivo.content_type.startswith('video/'):
+            return "video"
+    
+    extension = os.path.splitext(archivo.filename)[1].lower()
+    
+    if extension in {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'}:
+        return "imagen"
+    elif extension in {'.mp4', '.mov', '.avi', '.mkv', '.webm'}:
+        return "video"
+    
+    return "imagen"
