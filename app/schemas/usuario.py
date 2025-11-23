@@ -185,9 +185,28 @@ class UsuarioSimple(BaseModel):
 # ============================================
 class UsuarioPerfil(UsuarioResponse):
     """Esquema extendido con estadísticas del usuario."""
-    total_publicaciones: int = 0
-    total_comentarios: int = 0
-    total_favoritos: int = 0
+    total_publicaciones: int = Field(0, description="Total de recetas publicadas")
+    total_comentarios: int = Field(0, description="Total de comentarios realizados")
+    total_favoritos: int = Field(0, description="Total de recetas favoritas")
+    lista_publicaciones: list[str] = Field(default_factory=list, description="Lista de publicaciones del usuario")
     
     class Config:
         from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "email": "usuario@example.com",
+                "alias": "chef_123",
+                "nombre": "Juan",
+                "apellido_paterno": "Pérez",
+                "apellido_materno": "García",
+                "telefono": "1234567890",
+                "direccion": "Calle Principal 123",
+                "fecha_registro": "2025-10-19T12:00:00",
+                "foto_perfil": "https://res.cloudinary.com/.../user_123.jpg",
+                "total_publicaciones": 15,
+                "total_comentarios": 47,
+                "total_favoritos": 23,
+                "lista_publicaciones": ["550e8400-e29b-41d4-a716-446655440000", "660e8400-e29b-41d4-a716-446655440000", "..."]
+            }
+        }

@@ -27,6 +27,7 @@ from app.repositories.usuario import (
     login_usuario,
     get_perfil_usuario,
     get_usuario_by_id,
+    get_usuario_by_email,
     actualizar_usuario,
     cambiar_contraseña as cambiar_contraseña_repo,
     eliminar_usuario as eliminar_usuario_repo
@@ -55,7 +56,7 @@ router = APIRouter()
 async def registrar_usuario(
     email: str = Form(...),
     alias: str = Form(...),
-    contraseña: str = Form(...),
+    password: str = Form(...),
     nombre: str = Form(None),
     apellido_paterno: str = Form(None),
     apellido_materno: str = Form(None),
@@ -80,7 +81,7 @@ async def registrar_usuario(
         data = UsuarioCreate(
             email=email,
             alias=alias,
-            contraseña=contraseña,
+            contraseña=password,
             nombre=nombre,
             apellido_paterno=apellido_paterno,
             apellido_materno=apellido_materno,
@@ -216,12 +217,13 @@ def get_perfil_usuario(
     
     # Agregar estadísticas al usuario
     usuario = perfil["usuario"]
-    usuario_dict = usuario.__dict__.copy()
-    usuario_dict["total_publicaciones"] = perfil["total_publicaciones"]
-    usuario_dict["total_comentarios"] = perfil["total_comentarios"]
-    usuario_dict["total_favoritos"] = perfil["total_favoritos"]
     
-    return usuario_dict
+    usuario.total_publicaciones = perfil["total_publicaciones"]
+    usuario.total_comentarios = perfil["total_comentarios"]
+    usuario.total_favoritos = perfil["total_favoritos"]
+    usuario.lista_publicaciones = perfil["lista_publicaciones"]
+    
+    return usuario
 
 
 # ============================================
@@ -247,6 +249,38 @@ def get_usuario(
         Datos del usuario (sin contraseña)
     """
     usuario = get_usuario_by_id(db, usuario_id)
+    
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+    
+    return usuario
+
+# ============================================
+# GET - OBTENER USUARIO POR EMAIL
+# ============================================
+
+@router.get(
+    "/by-email/{usuario_email}",
+    response_model=UsuarioResponse,
+    summary="Obtener usuario por su email",
+    description="Obtiene los datos básicos de un usuario"
+)
+def get_usuario_email(
+    usuario_email: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene un usuario por su ID.
+    
+    - **usuario_email**: email del usuario
+    
+    Returns:
+        Datos del usuario (sin contraseña)
+    """
+    usuario = get_usuario_by_email(db, usuario_email)
     
     if not usuario:
         raise HTTPException(

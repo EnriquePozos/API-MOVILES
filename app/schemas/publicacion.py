@@ -8,10 +8,8 @@ from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from app.models.publicacion import EstatusPublicacion
 
-# Imports para evitar referencias circulares
-if TYPE_CHECKING:
-    from .multimedia import MultimediaResponse
-    from .comentario import ComentarioResponse
+from app.schemas.multimedia import MultimediaResponse, MultimediaSimple
+from app.schemas.comentario import ComentarioResponse, ComentarioSimple
 
 
 # ============================================
@@ -141,7 +139,76 @@ class PublicacionDetalle(PublicacionResponse):
     
     class Config:
         from_attributes = True
-
+        json_schema_extra = {
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "titulo": "Tacos al Pastor Auténticos",
+                "descripcion": "Receta tradicional de tacos al pastor...",
+                "fecha_creacion": "2025-10-19T12:00:00",
+                "fecha_publicacion": "2025-10-19T14:00:00",
+                "fecha_modificacion": None,
+                "estatus": "publicada",
+                "id_autor": "660e8400-e29b-41d4-a716-446655440000",
+                "autor_alias": "chef_123",
+                "autor_foto": "https://res.cloudinary.com/...",
+                "total_comentarios": 5,
+                "total_reacciones": 12,
+                "total_favoritos": 3,
+                "multimedia": [
+                    {
+                        "id": "990e8400-e29b-41d4-a716-446655440000",
+                        "url": "https://res.cloudinary.com/demo/image/upload/v1234567890/receta.jpg",
+                        "tipo": "imagen",
+                        "fecha_subida": "2025-10-19T12:00:00",
+                        "id_publicacion": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                ],
+                "comentarios_recientes": [
+                    {
+                       "id": "770e8400-e29b-41d4-a716-446655440000",
+                        "comentario": "¡Excelente receta! La probé y quedó deliciosa",
+                        "estatus": "activo",
+                        "fecha_creacion": "2025-10-19T15:00:00",
+                        "id_usuario": "660e8400-e29b-41d4-a716-446655440000",
+                        "id_publicacion": "550e8400-e29b-41d4-a716-446655440000",
+                        "id_comentario": None,
+                        "usuario_alias": "chef_123",
+                        "usuario_foto": "https://res.cloudinary.com/...",
+                        "es_respuesta": False,
+                        "total_respuestas": 2,
+                        "total_reacciones": 5
+                    }
+                ]
+            }
+        }
+        
+class PublicacionListFeed(BaseModel):
+    """Esquema para publicaciones en el feed."""
+    id: str
+    titulo: str
+    descripcion: Optional[str] = None
+    fecha_publicacion: Optional[datetime] = None
+    estatus: EstatusPublicacion
+    id_autor: str
+    
+    # Datos del autor
+    autor_alias: Optional[str] = None
+    autor_foto: Optional[str] = None
+    
+    # Estadísticas
+    total_comentarios: int = 0
+    total_reacciones: int = 0
+    
+    # Preview
+    imagen_preview: Optional[str] = None
+    
+    # Multimedia y comentarios (opcionales para feed)
+    multimedia_list: List[MultimediaSimple] = []
+    comentarios_recientes: List[ComentarioSimple] = []
+    
+    class Config:
+        from_attributes = True
+        
 
 # ============================================
 # ESQUEMA PARA PUBLICAR (cambiar de borrador a publicada)
