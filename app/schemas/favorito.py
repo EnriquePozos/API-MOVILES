@@ -41,7 +41,7 @@ class FavoritoResponse(FavoritoBase):
     
     # Información de la publicación (nested)
     publicacion_titulo: Optional[str] = None
-    publicacion_imagen: Optional[str] = None
+    #publicacion_imagen: Optional[str] = None
     
     class Config:
         from_attributes = True
