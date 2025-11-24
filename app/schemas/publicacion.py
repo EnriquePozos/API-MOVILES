@@ -187,6 +187,7 @@ class PublicacionListFeed(BaseModel):
     id: str
     titulo: str
     descripcion: Optional[str] = None
+    fecha_creacion: Optional[datetime] = None
     fecha_publicacion: Optional[datetime] = None
     estatus: EstatusPublicacion
     id_autor: str

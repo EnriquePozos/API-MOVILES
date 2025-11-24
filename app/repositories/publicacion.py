@@ -129,6 +129,8 @@ def get_user_pubs(db: Session, id_autor: str, estatus: EstatusPublicacion) -> Li
         pub.autor_alias = pub.autor.alias if pub.autor else None
         pub.autor_foto = pub.autor.foto_perfil if pub.autor else None
         pub.total_comentarios = len(pub.comentarios)
+        pub.fecha_creacion = pub.fecha_creacion if pub.fecha_creacion else None
+        pub.fecha_publicacion = pub.fecha_publicacion if pub.fecha_publicacion else None
         pub.total_reacciones = len(pub.reacciones)
         pub.imagen_preview = pub.multimedia[0].url if pub.multimedia else None
         pub.multimedia_list = pub.multimedia
