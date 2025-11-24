@@ -92,7 +92,15 @@ def get_publicacion(
             detail="Publicación no encontrada"
         )
         
-    return publicacion
+    pub_response = publicacion.__dict__.copy()
+    pub_response['autor_alias'] = publicacion.autor.alias if publicacion.autor else None
+    pub_response['autor_foto'] = publicacion.autor.foto_perfil if publicacion.autor else None
+    pub_response['total_comentarios'] = len(publicacion.comentarios)
+    pub_response['total_reacciones'] = len(publicacion.reacciones)
+    pub_response['multimedia'] = publicacion.multimedia
+    pub_response['comentarios_recientes'] = publicacion.comentarios
+        
+    return pub_response
 
 # Obtener publicaciones activas de un usuario
 @router.get(
