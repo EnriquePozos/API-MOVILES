@@ -12,7 +12,23 @@ from app.models.reaccion import TipoReaccion
 # ============================================
 class ReaccionBase(BaseModel):
     """Campos base de Reaccion."""
-    tipo_reaccion: TipoReaccion = Field(..., description="Tipo de reacción")
+    reaccion: TipoReaccion = Field(..., description="Tipo de reacción")
+    
+class ReaccionComment(ReaccionBase):
+    """Campos base de Reaccion para comentarios."""
+    id_usuario: str = Field(..., description="ID del usuario que reacciona")
+    id_comentario: str = Field(..., description="ID del comentario al que se reacciona")
+    
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id_usuario": "660e8400-e29b-41d4-a716-446655440000",
+                "id_comentario": "550e8400-e29b-41d4-a716-446655440000",
+                "tipo_reaccion": "like"
+            }
+        }
+    
 
 
 # ============================================

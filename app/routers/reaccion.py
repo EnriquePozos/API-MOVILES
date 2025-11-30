@@ -18,7 +18,8 @@ from app.repositories.reaccion import (
     remove_reaccion_comment,
     get_reacciones_publicacion,
     get_reacciones_comentario,
-    get_reaccion_usuario_publicacion
+    get_reaccion_usuario_publicacion,
+    get_reaccion_usuario_comentario
 )
 
 
@@ -97,10 +98,10 @@ def get_conteo_reacciones_publicacion(
 @router.get(
     "/publicacion/{id_publicacion}/usuario/{id_usuario}",
     status_code=status.HTTP_200_OK,
-    summary="Verificar reacción de usuario",
+    summary="Verificar reacción de usuario en una publicación",
     description="Verifica si un usuario ha reaccionado a una publicación y qué tipo de reacción."
 )
-def verificar_reaccion_usuario(
+def verificar_reaccion_usuario_pub(
     id_publicacion: str,
     id_usuario: str,
     db: Session = Depends(get_db)
@@ -124,6 +125,7 @@ def verificar_reaccion_usuario(
 # ============================================
 # REACCIONES A COMENTARIOS
 # ============================================
+
 
 @router.post(
     "/comentario/{id_comentario}",
@@ -188,3 +190,30 @@ def get_conteo_reacciones_comentario(
     """Obtiene el conteo de reacciones de un comentario."""
     
     return get_reacciones_comentario(db, id_comentario)
+    
+    
+@router.get(
+    "/comentario/{id_comentario}/usuario/{id_usuario}",
+    status_code=status.HTTP_200_OK,
+    summary="Verificar reacción de usuario en un comentario",
+    description="Verifica si un usuario ha reaccionado a un comentario y qué tipo de reacción."
+)
+def verificar_reaccion_usuario_comment(
+    id_comentario: str,
+    id_usuario: str,
+    db: Session = Depends(get_db)
+):
+    """Verifica la reacción de un usuario a un comentario."""
+    
+    reaccion = get_reaccion_usuario_comentario(db, id_usuario, id_comentario)
+    
+    if not reaccion:
+        return {
+            "tiene_reaccion": False,
+            "tipo_reaccion": None
+        }
+    
+    return {
+        "tiene_reaccion": True,
+        "tipo_reaccion": reaccion.reaccion
+    }

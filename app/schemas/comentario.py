@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
 from app.models.comentario import EstatusComentario
+from app.schemas.reaccion import ReaccionComment
 
 
 # ============================================
@@ -89,6 +90,9 @@ class ComentarioResponse(ComentarioBase):
     total_respuestas: int = 0
     total_reacciones: int = 0
     
+    # Lista de reacciones
+    reacciones: List[ReaccionComment] = Field(default_factory=list)
+    
     class Config:
         from_attributes = True
         json_schema_extra = {
@@ -104,6 +108,13 @@ class ComentarioResponse(ComentarioBase):
                 "usuario_foto": "https://res.cloudinary.com/...",
                 #"es_respuesta": False,
                 "total_respuestas": 2,
+                "reacciones: ": [
+                    {
+                        "id_usuario": "660e8400-e29b-41d4-a716-446655440000",
+                        "id_comentario": "550e8400-e29b-41d4-a716-446655440000",
+                        "tipo_reaccion": "like"
+                    }
+                ],
                 "total_reacciones": 5
             }
         }

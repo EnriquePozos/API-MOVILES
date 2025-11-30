@@ -134,6 +134,7 @@ def get_reaccion_usuario_publicacion(
 # REACCIONES A COMENTARIOS
 # ============================================
 
+
 def add_reaccion_comment(
     db: Session, 
     id_usuario: str, 
@@ -238,3 +239,16 @@ def get_reacciones_comentario(db: Session, id_comentario: str) -> dict:
         "dislikes": dislikes,
         "total": likes + dislikes
     }
+    
+    
+def get_reaccion_usuario_comentario(
+    db: Session, 
+    id_usuario: str, 
+    id_comentario: str
+) -> Optional[Reaccion]:
+    """Obtiene la reacción de un usuario a una comentario específica."""
+    
+    return db.query(Reaccion).filter(
+        Reaccion.id_usuario == id_usuario,
+        Reaccion.id_comentario == id_comentario
+    ).first()

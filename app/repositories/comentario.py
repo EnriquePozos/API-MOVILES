@@ -143,6 +143,7 @@ def get_comentarios_publicacion(
             "usuario_foto": usuario.foto_perfil if usuario else None,
             "es_respuesta": False,
             "total_respuestas": total_respuestas,
+            "reacciones": c.reacciones,
             "total_reacciones": total_reacciones
         })
     
