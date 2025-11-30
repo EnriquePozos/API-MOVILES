@@ -13,6 +13,20 @@ from app.models.favorito import Favorito
 from app.schemas.publicacion import PublicacionCreate, PublicacionUpdate
 from app.utils.datetime_utils import now, utc_now
 
+# Helper para serializar el JSON de respuesta de publicaciones
+def serialize(publicaciones):
+    for pub in publicaciones:
+        pub.autor_alias = pub.autor.alias if pub.autor else None
+        pub.autor_foto = pub.autor.foto_perfil if pub.autor else None
+        pub.total_comentarios = len(pub.comentarios)
+        pub.fecha_creacion = pub.fecha_creacion if pub.fecha_creacion else None
+        pub.fecha_publicacion = pub.fecha_publicacion if pub.fecha_publicacion else None
+        pub.total_reacciones = len(pub.reacciones)
+        pub.imagen_preview = pub.multimedia[0].url if pub.multimedia else None
+        pub.multimedia_list = pub.multimedia
+    
+    return publicaciones
+
 
 # Crear publicación
 def crear_publicacion( 
@@ -97,14 +111,7 @@ def get_feed_pubs(db: Session) -> List[Publicacion]:
         Publicacion.fecha_publicacion.desc()
     ).all()
     
-    # Enriquecer datos
-    for pub in publicaciones:
-        pub.autor_alias = pub.autor.alias if pub.autor else None
-        pub.autor_foto = pub.autor.foto_perfil if pub.autor else None
-        pub.total_comentarios = len(pub.comentarios)
-        pub.total_reacciones = len(pub.reacciones)
-        pub.imagen_preview = pub.multimedia[0].url if pub.multimedia else None
-        pub.multimedia_list = pub.multimedia
+    publicaciones = serialize(publicaciones)
     
     return publicaciones
 
@@ -123,31 +130,24 @@ def get_user_pubs(db: Session, id_autor: str, estatus: EstatusPublicacion) -> Li
     ).order_by(
         Publicacion.fecha_publicacion.desc()
     ).all()
-    
-    # Enriquecer datos
-    for pub in publicaciones:
-        pub.autor_alias = pub.autor.alias if pub.autor else None
-        pub.autor_foto = pub.autor.foto_perfil if pub.autor else None
-        pub.total_comentarios = len(pub.comentarios)
-        pub.fecha_creacion = pub.fecha_creacion if pub.fecha_creacion else None
-        pub.fecha_publicacion = pub.fecha_publicacion if pub.fecha_publicacion else None
-        pub.total_reacciones = len(pub.reacciones)
-        pub.imagen_preview = pub.multimedia[0].url if pub.multimedia else None
-        pub.multimedia_list = pub.multimedia
+        
+    publicaciones = serialize(publicaciones)
     
     return publicaciones
 
 
-def get_fav_pubs(db: Session, id_autor: str) -> List[Publicacion]:
+def get_fav_pubs(db: Session, id_usuario: str) -> List[Publicacion]:
     """ Obtiene publicaciones marcadas como favoritas por el usuario."""
     favoritos = db.query(Favorito).filter(
-        Favorito.id_usuario == id_autor
+        Favorito.id_usuario == id_usuario
     ).all()
     
-    publicaciones = get_user_pubs(db, id_autor, EstatusPublicacion.PUBLICADA)
-    
+    # Obtener las publicaciones favoritas
     favoritas_ids = {fav.id_publicacion for fav in favoritos}
+    fav_pubs = db.query(Publicacion).filter(Publicacion.id.in_(favoritas_ids)).all()
     
-    fav_pubs = [pub for pub in publicaciones if pub.id in favoritas_ids]
+    fav_pubs = serialize(fav_pubs)
     
     return fav_pubs
+
+
